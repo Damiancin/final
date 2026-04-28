@@ -331,6 +331,32 @@ function App() {
         </div>
       </header>
 
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 h-40 sm:h-56">
+          <img
+            src="/banner-agenda.png"
+            alt="Agenda compartida"
+            className="w-full h-full object-cover opacity-80"
+          />
+
+          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/55 to-transparent" />
+
+          <div className="absolute left-5 top-5 max-w-md">
+            <p className="text-[10px] uppercase tracking-[0.25em] text-emerald-400 font-semibold">
+              Agenda compartida
+            </p>
+
+            <h2 className="text-xl sm:text-2xl font-semibold text-zinc-50 mt-2">
+              Organización, rutina y tiempo juntos
+            </h2>
+
+            <p className="text-xs sm:text-sm text-zinc-400 mt-2">
+              Plan semanal, pendientes, gimnasio y actividades en un solo lugar.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
