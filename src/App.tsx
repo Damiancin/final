@@ -429,26 +429,26 @@ function App() {
       </header>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 h-40 sm:h-56">
+        <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 h-44 sm:h-56">
+          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/85 to-zinc-950/25 z-10" />
+
           <img
             src="/imagen.png"
             alt="Agenda compartida"
-            className="w-full h-full object-cover opacity-120"
+            className="absolute right-0 top-0 h-full w-full sm:w-[48%] object-contain object-right opacity-100"
           />
 
-          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/55 to-transparent" />
-
-          <div className="absolute left-5 top-5 max-w-md">
-            <p className="text-[10px] uppercase tracking-[0.25em] text-emerald-400 font-semibold">
+          <div className="absolute left-5 top-5 max-w-xl z-20 pr-5">
+            <p className="text-[10px] uppercase tracking-[0.35em] text-emerald-400 font-semibold">
               Agenda compartida
             </p>
 
-            <h2 className="text-xl sm:text-2xl font-semibold text-zinc-50 mt-2">
+            <h2 className="text-xl sm:text-2xl font-semibold text-zinc-50 mt-3">
               Organización, rutina y tiempo juntos
             </h2>
 
-            <p className="text-xs sm:text-sm text-zinc-400 mt-2">
-              Plan semanal, pendientes, gimnasio y actividades en un solo lugar.
+            <p className="text-xs sm:text-sm text-zinc-400 mt-3 max-w-md">
+              Plan semanal, pendientes, gimnasio, check-in emocional y actividades en un solo lugar.
             </p>
           </div>
         </div>
@@ -581,8 +581,46 @@ function App() {
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl">
+          <div className="space-y-4">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-semibold text-zinc-200">Pendientes</h3>
+                </div>
+                <span className="text-[10px] text-zinc-300 bg-rose-500/20 border border-rose-500/30 px-2 py-0.5 rounded-full">
+                  {pendingEntries.length}
+                </span>
+              </div>
+
+              <div className="p-4 space-y-2">
+                {pendingEntries.length === 0 && (
+                  <p className="text-xs text-zinc-600 text-center py-3">Sin pendientes activos.</p>
+                )}
+
+                {pendingEntries.slice(0, 4).map((entry) => (
+                  <button
+                    key={entry.id}
+                    onClick={() => toggleEntryDone(entry.id)}
+                    className="w-full flex items-start gap-2.5 text-left group hover:bg-zinc-800/50 rounded-lg p-1.5 -m-1.5 transition-colors"
+                  >
+                    <Circle className="w-4 h-4 text-zinc-600 shrink-0 mt-0.5 group-hover:text-amber-400 transition-colors" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-zinc-300 truncate">{entry.text}</p>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">
+                        {getPersonLabel(entry.person)}{entry.date ? ` · ${entry.date}` : ''}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+
+                {pendingEntries.length > 4 && (
+                  <p className="text-[10px] text-emerald-400 pt-1">+ {pendingEntries.length - 4} pendientes más</p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
               <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Heart className="w-4 h-4 text-pink-400" />
@@ -591,148 +629,100 @@ function App() {
                 <span className="text-[10px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{selectedDate}</span>
               </div>
 
-              <div className="p-4 space-y-4">
+              <div className="p-4 space-y-3">
                 {(['damian', 'joss'] as const).map((person) => {
                   const mood = getMoodFor(person);
                   const selectedMood = MOOD_SCALE.find((m) => m.value === mood.mood_value) ?? MOOD_SCALE[2];
 
                   return (
                     <div key={person} className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-3">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${person === 'damian' ? 'bg-sky-600' : 'bg-rose-600'}`}>
+                          {person === 'damian' ? 'D' : 'J'}
+                        </div>
+                        <div className="flex-1 min-w-0">
                           <p className={`text-xs font-semibold ${person === 'damian' ? 'text-sky-400' : 'text-rose-400'}`}>
                             {getMoodPersonLabel(person)}
                           </p>
-                          <p className="text-[10px] text-zinc-500">{selectedMood.emoji} {mood.mood_label}</p>
+                          <p className="text-[10px] text-zinc-500 truncate">{selectedMood.emoji} {mood.mood_label}</p>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-5 gap-1.5 mb-3">
+                      <div className="grid grid-cols-5 gap-1.5 mb-2">
                         {MOOD_SCALE.map((item) => {
                           const active = mood.mood_value === item.value;
                           return (
                             <button
                               key={item.value}
                               onClick={() => chooseMood(person, item.value, item.label)}
-                              className={`rounded-lg border px-1 py-2 text-center transition-all ${
+                              className={`rounded-lg border px-1 py-1.5 text-center transition-all ${
                                 active
-                                  ? item.color
+                                  ? `${item.color} ring-1 ring-emerald-400/40`
                                   : 'border-zinc-800 bg-zinc-900/70 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
                               }`}
                               title={item.label}
                             >
                               <span className="block text-base leading-none">{item.emoji}</span>
-                              <span className="block text-[8px] mt-1 truncate">{item.value}/5</span>
                             </button>
                           );
                         })}
                       </div>
 
-                      <textarea
-                        value={mood.comment}
-                        onChange={(e) => updateMood(person, { comment: e.target.value })}
-                        placeholder="Comentario del día: ¿cómo me siento?, ¿qué necesito?, ¿qué quiero compartir?"
-                        className="w-full min-h-[64px] resize-none bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none focus:border-pink-500 placeholder:text-zinc-600"
-                      />
-
-                      <button
-                        onClick={() => saveMoodComment(person)}
-                        className="mt-2 w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-pink-600/20 border border-pink-500/30 text-pink-300 hover:bg-pink-600/30 text-xs font-medium transition-colors"
-                      >
-                        <Save className="w-3.5 h-3.5" />
-                        Guardar estado de {getMoodPersonLabel(person)}
-                      </button>
+                      <div className="flex gap-2">
+                        <input
+                          value={mood.comment}
+                          onChange={(e) => updateMood(person, { comment: e.target.value })}
+                          onBlur={() => saveMoodComment(person)}
+                          placeholder="Comentario breve del día"
+                          className="flex-1 min-w-0 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none focus:border-pink-500 placeholder:text-zinc-600"
+                        />
+                        <button
+                          onClick={() => saveMoodComment(person)}
+                          className="px-3 rounded-lg bg-pink-600/20 border border-pink-500/30 text-pink-300 hover:bg-pink-600/30 transition-colors"
+                          title="Guardar"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {pendingEntries.length > 0 && (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl">
-                <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4 text-amber-400" /><h3 className="text-sm font-semibold text-zinc-200">Pendientes</h3></div>
-                  <span className="text-[10px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{pendingEntries.length}</span>
-                </div>
-                <div className="p-4 space-y-2">
-                  {pendingEntries.map((entry) => (
-                    <button key={entry.id} onClick={() => toggleEntryDone(entry.id)} className="w-full flex items-start gap-2.5 text-left group hover:bg-zinc-800/50 rounded-lg p-1.5 -m-1.5 transition-colors">
-                      <Circle className="w-4 h-4 text-zinc-600 shrink-0 mt-0.5 group-hover:text-amber-400 transition-colors" />
-                      <div className="flex-1 min-w-0"><p className="text-xs text-zinc-300 truncate">{entry.text}</p><p className="text-[10px] text-zinc-500 mt-0.5">{getPersonLabel(entry.person)}{entry.date ? ` - ${entry.date}` : ''}</p></div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
               <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Dumbbell className="w-4 h-4 text-emerald-400" />
                   <h3 className="text-sm font-semibold text-zinc-200">Gimnasio semanal</h3>
                 </div>
-                <span className="text-[10px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{gymCompleted}/7</span>
+                <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{gymCompleted}/7</span>
               </div>
 
               <div className="p-4">
-                <div className="grid grid-cols-7 gap-1.5 mb-4">
+                <div className="grid grid-cols-7 gap-1.5">
                   {gymDays.map((g) => (
-                    <button
-                      key={g.day}
-                      onClick={() => toggleGym(g.day)}
-                      className={`flex flex-col items-center py-2 rounded-lg border transition-all ${
-                        g.completed
-                          ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                          : 'bg-zinc-800/50 border-zinc-800 text-zinc-500 hover:border-zinc-700'
-                      }`}
-                    >
-                      <span className="text-[10px] font-medium">{g.day}</span>
-                      <span className="text-[8px] mt-0.5 opacity-70">{g.type}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  {gymDays.map((g) => (
-                    <div key={g.day} className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-2">
-                      <div className="flex items-center gap-2 mb-2">
-                        <button
-                          onClick={() => toggleGym(g.day)}
-                          className={`w-2 h-2 rounded-full shrink-0 ${
-                            g.completed ? 'bg-emerald-400' : 'bg-zinc-700'
-                          }`}
-                          title="Marcar como completado"
-                        />
-
-                        <span className="text-[10px] text-zinc-500 w-7">{g.day}</span>
-
-                        <input
-                          value={g.type}
-                          onChange={(e) => updateGymDay(g.day, 'type', e.target.value)}
-                          className="flex-1 bg-zinc-900 border border-zinc-800 rounded-md px-2 py-1 text-[10px] text-zinc-200 outline-none focus:border-emerald-500"
-                          placeholder="Push / Pull / Leg"
-                        />
-                      </div>
-
-                      <input
-                        value={g.detail}
-                        onChange={(e) => updateGymDay(g.day, 'detail', e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-md px-2 py-1 text-[10px] text-zinc-400 outline-none focus:border-emerald-500"
-                        placeholder="Detalle del entrenamiento"
-                      />
+                    <div key={g.day} className="text-center">
+                      <button
+                        onClick={() => toggleGym(g.day)}
+                        className={`w-full rounded-lg border px-1.5 py-2 transition-all ${
+                          g.completed
+                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                            : 'bg-zinc-900/70 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                        }`}
+                      >
+                        <span className="block text-[10px] text-zinc-500">{g.day}</span>
+                        <span className="block text-[10px] font-semibold text-zinc-200 truncate mt-1">{g.type}</span>
+                        <span className={`mx-auto mt-2 flex w-4 h-4 rounded-full border items-center justify-center ${g.completed ? 'border-emerald-400 bg-emerald-500/20' : 'border-zinc-700'}`}>
+                          {g.completed && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
+                        </span>
+                      </button>
                     </div>
                   ))}
                 </div>
 
-                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
-                    style={{ width: `${(gymCompleted / 7) * 100}%` }}
-                  />
-                </div>
-
-                <p className="text-[10px] text-zinc-500 mt-2 text-center">
-                  {gymCompleted === 7 ? 'Semana completada' : `${7 - gymCompleted} días restantes`}
+                <p className="text-[10px] text-zinc-500 mt-3 text-center">
+                  Haz clic en un día para marcarlo como cumplido.
                 </p>
               </div>
             </div>
@@ -742,9 +732,9 @@ function App() {
                 <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-sky-400" /><h3 className="text-sm font-semibold text-zinc-200">Notas y pendientes</h3></div>
                 <button onClick={() => { setShowAddModal(true); setModalTab('note'); }} className="w-6 h-6 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center hover:bg-zinc-700 transition-colors"><Plus className="w-3 h-3 text-zinc-400" /></button>
               </div>
-              <div className="p-4 space-y-2 max-h-80 overflow-y-auto">
+              <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
                 {entries.length === 0 && <p className="text-xs text-zinc-600 text-center py-4">Sin entradas. Agrega una nota o pendiente.</p>}
-                {entries.map((entry) => {
+                {entries.slice(0, 6).map((entry) => {
                   const Icon = getEntryIcon(entry.type);
                   const color = getEntryColor(entry.type);
                   return (
