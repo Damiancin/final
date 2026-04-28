@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Calendar, Clock, Dumbbell, CheckCircle2, Circle, ChevronLeft, ChevronRight,
   Plus, User, Users, AlertCircle, X, MessageSquare, ListTodo, Activity,
-  PartyPopper, Bell, Save, Trash2, Edit3,
+  PartyPopper, Bell, Save, Trash2, Edit3, Heart,
 } from 'lucide-react';
 
 import { AgendaBlock, QuickEntry, GymDay } from './types';
@@ -22,6 +22,27 @@ const ENTRY_TYPES = [
   { value: 'actividad',  label: 'Actividad',  icon: Activity,      color: 'text-emerald-400' },
   { value: 'evento',     label: 'Evento',     icon: PartyPopper,   color: 'text-rose-400' },
   { value: 'recordatorio', label: 'Recordatorio', icon: Bell,      color: 'text-teal-400' },
+] as const;
+
+type MoodPerson = 'damian' | 'joss';
+
+type DailyMood = {
+  id: string;
+  date: string;
+  person: MoodPerson;
+  mood_value: number;
+  mood_label: string;
+  comment: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+const MOOD_SCALE = [
+  { value: 1, label: 'Muy mal', emoji: '😟', color: 'border-red-500/40 bg-red-500/10 text-red-300' },
+  { value: 2, label: 'Bajo', emoji: '🙁', color: 'border-orange-500/40 bg-orange-500/10 text-orange-300' },
+  { value: 3, label: 'Neutral', emoji: '😐', color: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300' },
+  { value: 4, label: 'Bien', emoji: '🙂', color: 'border-lime-500/40 bg-lime-500/10 text-lime-300' },
+  { value: 5, label: 'Muy bien', emoji: '😄', color: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' },
 ] as const;
 
 const INITIAL_GYM: GymDay[] = [
@@ -69,6 +90,24 @@ async function sbLoadEntries() { if (!supabase) return null; const { data, error
 async function sbInsertEntry(e: QuickEntry) { if (!supabase) return; await supabase.from('quick_entries').insert([e]); }
 async function sbUpdateEntry(e: QuickEntry) { if (!supabase) return; await supabase.from('quick_entries').update(e).eq('id', e.id); }
 async function sbDeleteEntry(id: string) { if (!supabase) return; await supabase.from('quick_entries').delete().eq('id', id); }
+async function sbLoadDailyMoods(date: string): Promise<DailyMood[] | null> {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from('daily_moods')
+    .select('*')
+    .eq('date', date);
+
+  return error ? null : data as DailyMood[];
+}
+
+async function sbUpsertDailyMood(mood: DailyMood) {
+  if (!supabase) return;
+
+  await supabase
+    .from('daily_moods')
+    .upsert(mood, { onConflict: 'date,person' });
+}
 
 async function sbLoadGymDays(): Promise<GymDay[] | null> {
   if (!supabase) return null;
@@ -132,6 +171,7 @@ function App() {
   const [deletedRecurring, setDeletedRecurring] = useState<string[]>(() => lsGet('agenda-deleted-recurring', []));
   const [gymDays, setGymDays]                 = useState<GymDay[]>(() => lsGet('agenda-gym-state', INITIAL_GYM));
   const [entries, setEntries]                 = useState<QuickEntry[]>(() => lsGet('agenda-quick-entries', []));
+  const [dailyMoods, setDailyMoods]         = useState<DailyMood[]>(() => lsGet('agenda-daily-moods', []));
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalTab, setModalTab]         = useState<'block' | 'note'>('note');
@@ -165,6 +205,14 @@ function App() {
     sbLoadEntries().then((data) => { if (data) { setEntries(data); lsSet('agenda-quick-entries', data); } });
     sbLoadGymDays().then((data) => { if (data) { setGymDays(data); lsSet('agenda-gym-state', data); } });
   }, []);
+
+  useEffect(() => {
+    sbLoadDailyMoods(selectedDate).then((data) => {
+      const next = data ?? lsGet(`agenda-daily-moods-${selectedDate}`, []);
+      setDailyMoods(next);
+      lsSet(`agenda-daily-moods-${selectedDate}`, next);
+    });
+  }, [selectedDate]);
 
   useEffect(() => { lsSet('agenda-custom-blocks', customBlocks); }, [customBlocks]);
   useEffect(() => { lsSet('agenda-quick-entries', entries); }, [entries]);
@@ -287,6 +335,55 @@ function App() {
   const getEntryColor = (t: QuickEntry['type']) => ENTRY_TYPES.find((x) => x.value === t)?.color ?? 'text-zinc-400';
   const getPersonLabel = (p: 'tú' | 'joss' | 'ambos') => p === 'tú' ? 'Damián' : p === 'joss' ? 'Joss' : 'Ambos';
 
+  const getMoodPersonLabel = (person: MoodPerson) =>
+    person === 'damian' ? 'Damián' : 'Joss';
+
+  const getMoodFor = (person: MoodPerson): DailyMood => {
+    const existing = dailyMoods.find((m) => m.date === selectedDate && m.person === person);
+    if (existing) return existing;
+
+    const neutral = MOOD_SCALE[2];
+    return {
+      id: `mood-${selectedDate}-${person}`,
+      date: selectedDate,
+      person,
+      mood_value: neutral.value,
+      mood_label: neutral.label,
+      comment: '',
+    };
+  };
+
+  const updateMood = (person: MoodPerson, patch: Partial<DailyMood>) => {
+    const current = getMoodFor(person);
+    const next: DailyMood = {
+      ...current,
+      ...patch,
+      id: `mood-${selectedDate}-${person}`,
+      date: selectedDate,
+      person,
+    };
+
+    const updated = [
+      ...dailyMoods.filter((m) => !(m.date === selectedDate && m.person === person)),
+      next,
+    ];
+
+    setDailyMoods(updated);
+    lsSet(`agenda-daily-moods-${selectedDate}`, updated);
+
+    return next;
+  };
+
+  const chooseMood = async (person: MoodPerson, value: number, label: string) => {
+    const next = updateMood(person, { mood_value: value, mood_label: label });
+    await sbUpsertDailyMood(next);
+  };
+
+  const saveMoodComment = async (person: MoodPerson) => {
+    const mood = getMoodFor(person);
+    await sbUpsertDailyMood(mood);
+  };
+
   const renderBlock = useCallback((block: AgendaBlock, column: 'damian' | 'joss') => {
     const top = (block.start - 8) * 48;
     const height = (block.end - block.start) * 48;
@@ -334,9 +431,9 @@ function App() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 h-40 sm:h-56">
           <img
-            src="/imagen.png"
+            src="/banner-agenda.png"
             alt="Agenda compartida"
-            className="w-full h-full object-contain opacity-110"
+            className="w-full h-full object-cover opacity-80"
           />
 
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/55 to-transparent" />
@@ -485,6 +582,72 @@ function App() {
           </div>
 
           <div className="space-y-6">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl">
+              <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-pink-400" />
+                  <h3 className="text-sm font-semibold text-zinc-200">Check-in emocional</h3>
+                </div>
+                <span className="text-[10px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{selectedDate}</span>
+              </div>
+
+              <div className="p-4 space-y-4">
+                {(['damian', 'joss'] as const).map((person) => {
+                  const mood = getMoodFor(person);
+                  const selectedMood = MOOD_SCALE.find((m) => m.value === mood.mood_value) ?? MOOD_SCALE[2];
+
+                  return (
+                    <div key={person} className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className={`text-xs font-semibold ${person === 'damian' ? 'text-sky-400' : 'text-rose-400'}`}>
+                            {getMoodPersonLabel(person)}
+                          </p>
+                          <p className="text-[10px] text-zinc-500">{selectedMood.emoji} {mood.mood_label}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-5 gap-1.5 mb-3">
+                        {MOOD_SCALE.map((item) => {
+                          const active = mood.mood_value === item.value;
+                          return (
+                            <button
+                              key={item.value}
+                              onClick={() => chooseMood(person, item.value, item.label)}
+                              className={`rounded-lg border px-1 py-2 text-center transition-all ${
+                                active
+                                  ? item.color
+                                  : 'border-zinc-800 bg-zinc-900/70 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                              }`}
+                              title={item.label}
+                            >
+                              <span className="block text-base leading-none">{item.emoji}</span>
+                              <span className="block text-[8px] mt-1 truncate">{item.value}/5</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <textarea
+                        value={mood.comment}
+                        onChange={(e) => updateMood(person, { comment: e.target.value })}
+                        placeholder="Comentario del día: ¿cómo me siento?, ¿qué necesito?, ¿qué quiero compartir?"
+                        className="w-full min-h-[64px] resize-none bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none focus:border-pink-500 placeholder:text-zinc-600"
+                      />
+
+                      <button
+                        onClick={() => saveMoodComment(person)}
+                        className="mt-2 w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-pink-600/20 border border-pink-500/30 text-pink-300 hover:bg-pink-600/30 text-xs font-medium transition-colors"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        Guardar estado de {getMoodPersonLabel(person)}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {pendingEntries.length > 0 && (
               <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl">
                 <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
