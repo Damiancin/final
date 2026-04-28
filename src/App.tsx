@@ -336,7 +336,7 @@ function App() {
           <img
             src="/imagen.png"
             alt="Agenda compartida"
-            className="w-full h-full object-contain opacity-80"
+            className="w-full h-full object-contain opacity-60"
           />
 
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/55 to-transparent" />
