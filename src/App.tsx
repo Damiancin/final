@@ -431,9 +431,9 @@ function App() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
         <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 h-40 sm:h-56">
           <img
-            src="/banner-agenda.png"
+            src="/imagen.png"
             alt="Agenda compartida"
-            className="w-full h-full object-cover opacity-80"
+            className="w-full h-full object-cover opacity-120"
           />
 
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/55 to-transparent" />
