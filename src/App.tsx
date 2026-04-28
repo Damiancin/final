@@ -172,6 +172,7 @@ function App() {
   const [gymDays, setGymDays]                 = useState<GymDay[]>(() => lsGet('agenda-gym-state', INITIAL_GYM));
   const [entries, setEntries]                 = useState<QuickEntry[]>(() => lsGet('agenda-quick-entries', []));
   const [dailyMoods, setDailyMoods]         = useState<DailyMood[]>(() => lsGet('agenda-daily-moods', []));
+  const [selectedGymDay, setSelectedGymDay] = useState<string>('Lun');
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalTab, setModalTab]         = useState<'block' | 'note'>('note');
@@ -226,6 +227,7 @@ function App() {
   const jossBlocks    = dayBlocks.filter((b) => b.person === 'joss'   || b.person === 'ambos');
   const gymCompleted  = gymDays.filter((g) => g.completed).length;
   const pendingEntries = entries.filter((e) => e.type === 'pendiente' && !e.done);
+  const selectedGym = gymDays.find((g) => g.day === selectedGymDay) ?? gymDays[0];
 
   const goTodayWeek = () => { const t = new Date(); setWeekStart(getWeekStart(t)); setSelectedDate(toDateStr(t)); };
   const goPrevWeek  = () => { const p = new Date(weekStart); p.setDate(p.getDate() - 7); setWeekStart(p); };
@@ -696,34 +698,115 @@ function App() {
                   <Dumbbell className="w-4 h-4 text-emerald-400" />
                   <h3 className="text-sm font-semibold text-zinc-200">Gimnasio semanal</h3>
                 </div>
-                <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{gymCompleted}/7</span>
+
+                <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                  {gymCompleted}/7
+                </span>
               </div>
 
               <div className="p-4">
                 <div className="grid grid-cols-7 gap-1.5">
                   {gymDays.map((g) => (
-                    <div key={g.day} className="text-center">
+                    <button
+                      key={g.day}
+                      onClick={() => setSelectedGymDay(g.day)}
+                      className={`rounded-lg border px-1 py-2 text-center transition-all ${
+                        selectedGymDay === g.day
+                          ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_0_1px_rgba(16,185,129,0.12)]'
+                          : 'bg-zinc-900/70 border-zinc-800 hover:border-zinc-700'
+                      }`}
+                    >
+                      <span className="block text-[10px] text-zinc-500">{g.day}</span>
+
+                      <span className="block text-[10px] font-semibold text-zinc-200 truncate mt-1">
+                        {g.type}
+                      </span>
+
                       <button
-                        onClick={() => toggleGym(g.day)}
-                        className={`w-full rounded-lg border px-1.5 py-2 transition-all ${
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleGym(g.day);
+                        }}
+                        className={`mx-auto mt-2 flex w-4 h-4 rounded-full border items-center justify-center transition-all ${
                           g.completed
-                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                            : 'bg-zinc-900/70 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                            ? 'border-emerald-400 bg-emerald-500/20'
+                            : 'border-zinc-700 hover:border-emerald-500/50'
                         }`}
+                        title="Marcar como cumplido"
                       >
-                        <span className="block text-[10px] text-zinc-500">{g.day}</span>
-                        <span className="block text-[10px] font-semibold text-zinc-200 truncate mt-1">{g.type}</span>
-                        <span className={`mx-auto mt-2 flex w-4 h-4 rounded-full border items-center justify-center ${g.completed ? 'border-emerald-400 bg-emerald-500/20' : 'border-zinc-700'}`}>
-                          {g.completed && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
-                        </span>
+                        {g.completed && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
                       </button>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
-                <p className="text-[10px] text-zinc-500 mt-3 text-center">
-                  Haz clic en un día para marcarlo como cumplido.
-                </p>
+                {selectedGym && (
+                  <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950/40 p-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+                          Editar rutina
+                        </p>
+                        <p className="text-xs text-zinc-300 mt-0.5">{selectedGym.day}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleGym(selectedGym.day)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] transition-all ${
+                          selectedGym.completed
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                        }`}
+                      >
+                        {selectedGym.completed ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Cumplido
+                          </>
+                        ) : (
+                          <>
+                            <Circle className="w-3.5 h-3.5" />
+                            Pendiente
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2">
+                      <div>
+                        <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+                          Rutina
+                        </label>
+
+                        <input
+                          value={selectedGym.type}
+                          onChange={(e) => updateGymDay(selectedGym.day, 'type', e.target.value)}
+                          placeholder="Push / Pull / Leg / Cardio / Descanso"
+                          className="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 outline-none focus:border-emerald-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
+                          Detalle
+                        </label>
+
+                        <input
+                          value={selectedGym.detail}
+                          onChange={(e) => updateGymDay(selectedGym.day, 'detail', e.target.value)}
+                          placeholder="Ej: Pecho · Hombro · Tríceps"
+                          className="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-400 outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    <p className="text-[10px] text-zinc-600 mt-3">
+                      Se guarda automáticamente y también lo verá Joss.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
